@@ -137,7 +137,7 @@
                 <input type="number" id="age" required autocomplete="off">
             </div>
 
-            <div>
+            <div id="nationalityDiv">
                 <label for="nationality">Nacionalidade</label>
                 <input type="text" id="nationality" required autocomplete="off">
             </div>
@@ -152,6 +152,7 @@
         const form = document.getElementById('playerForm');
         const playerList = document.getElementById('playerList');
         const messageDiv = document.getElementById('message');
+        const nationalityDiv = document.getElementById('nationalityDiv');
         let editMode = false;
         let editPlayerId = null;
 
@@ -180,6 +181,7 @@
                     editMode = false;
                     editPlayerId = null;
                     form.reset();
+                    nationalityDiv.style.display = 'block'; // Mostrar o input novamente
                 } else {
                     messageDiv.textContent = 'Erro ao atualizar jogador!';
                 }
@@ -212,7 +214,7 @@
             players.forEach(player => {
                 const li = document.createElement('li');
                 li.classList.add('player-item');
-                li.innerHTML = `
+                li.innerHTML = ` 
                     <span>${player.name} - ${player.position} - ${player.age} anos </span>
                     <div class="icons">
                         <img src="/images/edit-tool.png" alt="Editar" onclick="editPlayer('${player._id}')">
@@ -221,6 +223,11 @@
                 `;
                 playerList.appendChild(li);
             });
+            if (editMode) {
+                nationalityDiv.style.display = 'none'; // Se ainda em modo de edição, mantenha escondido
+            } else {
+                nationalityDiv.style.display = 'flex'; // Mostrar se não está editando
+            }
         };
 
         const editPlayer = (id) => {
@@ -233,6 +240,7 @@
                 form.nationality.value = playerData[3];
                 editMode = true;
                 editPlayerId = id;
+                nationalityDiv.style.display = 'none'; // Esconder o input de nacionalidade
             }
         };
 
