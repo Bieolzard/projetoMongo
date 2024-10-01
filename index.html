@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD de Jogadores - Corinthians</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        input {
+            margin: 5px 0;
+            width: 100%;
+            padding: 8px;
+        }
+
+        button {
+            padding: 10px;
+        }
+
+        .message {
+            color: green;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Adicionar Jogador</h1>
+        <form id="playerForm">
+            <input type="text" id="name" placeholder="Nome" required>
+            <input type="text" id="position" placeholder="Posição" required>
+            <input type="number" id="age" placeholder="Idade" required>
+            <input type="text" id="nationality" placeholder="Nacionalidade" required>
+            <input type="date" id="contractDate" required>
+            <button type="submit">Adicionar Jogador</button>
+        </form>
+        <div class="message" id="message"></div>
+        <h2>Lista de Jogadores</h2>
+        <ul id="playerList"></ul>
+    </div>
+    <script>
+        const form = document.getElementById('playerForm');
+        const playerList = document.getElementById('playerList');
+        const messageDiv = document.getElementById('message');
+        let editMode = false;
+        let editPlayerId = null;
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const player = {
+                name: form.name.value,
+                position: form.position.value,
+                age: form.age.value,
+                nationality: form.nationality.value,
+                contractDate: form.contractDate.value
+            };
+
+            if (editMode) {
+                const response = await fetch(`http://localhost:3000/api/players/${editPlayerId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(player)
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    messageDiv.textContent = data.message;
+                    editMode = false;
+                    editPlayerId = null;
+                } else {
+                    messageDiv.textContent = 'Erro ao atualizar jogador!';
+                }
+            } else {
+                const response = await fetch('http://localhost:3000/api/players', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(player)
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    messageDiv.textContent = data.message;
+                    form.reset();
+                } else {
+                    messageDiv.textContent = 'Erro ao adicionar jogador!';
+                }
+            }
+
+            loadPlayers();
+        });
+
+        const loadPlayers = async () => {
+            const response = await fetch('http://localhost:3000/api/players');
+            const players = await response.json();
+
+            playerList.innerHTML = '';
+            players.forEach(player => {
+                const li = document.createElement('li');
+                li.textContent = `${player.name} - ${player.position}`;
+                playerList.appendChild(li);
+
+                // Botão de editar
+                const editButton = document.createElement('button');
+                editButton.textContent = 'Editar';
+                editButton.onclick = () => editPlayer(player);
+                li.appendChild(editButton);
+
+                // Botão de remover
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Remover';
+                deleteButton.onclick = () => removePlayer(player._id);
+                li.appendChild(deleteButton);
+            });
+        };
+
+        const editPlayer = (player) => {
+            form.name.value = player.name;
+            form.position.value = player.position;
+            form.age.value = player.age;
+            form.nationality.value = player.nationality;
+            form.contractDate.value = player.contractDate;
+            editMode = true;
+            editPlayerId = player._id;
+        };
+
+        const removePlayer = async (id) => {
+            const response = await fetch(`http://localhost:3000/api/players/${id}`, {
+                method: 'DELETE'
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                messageDiv.textContent = data.message;
+                loadPlayers();
+            } else {
+                messageDiv.textContent = 'Erro ao remover jogador!';
+            }
+        };
+
+        loadPlayers();
+    </script>
+
+</body>
+
+</html>
