@@ -13,10 +13,18 @@ router.post('/', async (req, res) => {
     }
 });
 
-// Listar jogadores
+// Listar jogadores com filtro e ordenação
 router.get('/', async (req, res) => {
-    const players = await Player.find();
-    res.send(players);
+    const { position, sortBy } = req.query;
+    const filter = position ? { position } : {};
+    const sortOptions = sortBy === 'name' ? { name: 1 } : {};
+
+    try {
+        const players = await Player.find(filter).sort(sortOptions);
+        res.json(players);
+    } catch (error) {
+        res.status(500).send(error);
+    }
 });
 
 // Editar um jogador
@@ -45,5 +53,17 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
+// Agrupar jogadores por posição
+router.get('/grouped', async (req, res) => {
+    try {
+        const groupedPlayers = await Player.aggregate([
+            { $group: { _id: "$position", count: { $sum: 1 } } },
+            { $sort: { count: -1 } } // Ordena pela contagem em ordem decrescente
+        ]);
+        res.json(groupedPlayers);
+    } catch (error) {
+        res.status(500).send(error);
+    }
+});
 
 module.exports = router;

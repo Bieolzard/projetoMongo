@@ -112,6 +112,9 @@
         li {
             margin-bottom: 10px;
         }
+        select {
+            padding: 10px;
+        }
     </style>
 </head>
 
@@ -146,13 +149,32 @@
         <div class="message" id="message"></div>
 
         <h2>Lista de Jogadores</h2>
+        <div>
+            <label for="filterPosition">Filtrar por Posição:</label>
+            <input type="text" id="filterPosition" placeholder="Digite a posição">
+            <button id="filterBtn">Filtrar</button>
+        </div>
+        <div>
+            <label for="sortBy">Ordenar por:</label>
+            <select id="sortBy">
+                <option value="">-- Selecione --</option>
+                <option value="name">Nome</option>
+            </select>
+            <button id="sortBtn">Ordenar</button>
+        </div>
         <ul id="playerList" class="player-list"></ul>
+
+        <h2>Jogadores Agrupados por Posição</h2>
+        <ul id="groupedPlayerList" class="player-list"></ul>
     </div>
     <script>
         const form = document.getElementById('playerForm');
         const playerList = document.getElementById('playerList');
         const messageDiv = document.getElementById('message');
         const nationalityDiv = document.getElementById('nationalityDiv');
+        const sortBtn = document.getElementById('sortBtn');
+        const filterBtn = document.getElementById('filterBtn');
+        const filterPosition = document.getElementById('filterPosition');
         let editMode = false;
         let editPlayerId = null;
 
@@ -181,7 +203,7 @@
                     editMode = false;
                     editPlayerId = null;
                     form.reset();
-                    nationalityDiv.style.display = 'block'; // Mostrar o input novamente
+                    nationalityDiv.style.display = 'block';
                 } else {
                     messageDiv.textContent = 'Erro ao atualizar jogador!';
                 }
@@ -204,17 +226,27 @@
             }
 
             loadPlayers();
+            loadGroupedPlayers();
         });
 
-        const loadPlayers = async () => {
-            const response = await fetch('http://localhost:3000/api/players');
+        sortBtn.addEventListener('click', () => {
+            loadPlayers();
+        });
+
+        filterBtn.addEventListener('click', () => {
+            loadPlayers(filterPosition.value);
+        });
+
+        const loadPlayers = async (positionFilter = '') => {
+            const sortBy = document.getElementById('sortBy').value;
+            const response = await fetch(`http://localhost:3000/api/players?position=${positionFilter}&sortBy=${sortBy}`);
             const players = await response.json();
 
             playerList.innerHTML = '';
             players.forEach(player => {
                 const li = document.createElement('li');
                 li.classList.add('player-item');
-                li.innerHTML = ` 
+                li.innerHTML = `
                     <span>${player.name} - ${player.position} - ${player.age} anos </span>
                     <div class="icons">
                         <img src="/images/edit-tool.png" alt="Editar" onclick="editPlayer('${player._id}')">
@@ -223,11 +255,19 @@
                 `;
                 playerList.appendChild(li);
             });
-            if (editMode) {
-                nationalityDiv.style.display = 'none'; // Se ainda em modo de edição, mantenha escondido
-            } else {
-                nationalityDiv.style.display = 'flex'; // Mostrar se não está editando
-            }
+        };
+
+        const loadGroupedPlayers = async () => {
+            const response = await fetch('http://localhost:3000/api/players/grouped');
+            const groupedPlayers = await response.json();
+
+            const groupedPlayerList = document.getElementById('groupedPlayerList');
+            groupedPlayerList.innerHTML = '';
+            groupedPlayers.forEach(group => {
+                const li = document.createElement('li');
+                li.textContent = `${group._id}: ${group.count} jogador${group.count > 1 ? 'es' : ''}`;
+                groupedPlayerList.appendChild(li);
+            });
         };
 
         const editPlayer = (id) => {
@@ -240,7 +280,7 @@
                 form.nationality.value = playerData[3];
                 editMode = true;
                 editPlayerId = id;
-                nationalityDiv.style.display = 'none'; // Esconder o input de nacionalidade
+                nationalityDiv.style.display = 'none';
             }
         };
 
@@ -253,12 +293,14 @@
             if (response.ok) {
                 messageDiv.textContent = data.message;
                 loadPlayers();
+                loadGroupedPlayers();
             } else {
                 messageDiv.textContent = 'Erro ao remover jogador!';
             }
         };
 
         loadPlayers();
+        loadGroupedPlayers();
     </script>
 
 </body>
